@@ -17,8 +17,6 @@ class ConfirmState extends State<Confirm> {
   String code;
 
   confirmUser() async {
-    await Amplify.Auth.confirmSignUp(
-        username: this.widget.username, confirmationCode: code.trim());
   }
 
   @override
