@@ -1,0 +1,22 @@
+{
+	"auth": {
+		"amplifytutorialbf3031ec": {
+			"service": "Cognito",
+			"providerPlugin": "awscloudformation",
+			"dependsOn": [],
+			"customAuth": false
+		}
+	},
+	"analytics": {
+		"amplifytutorial": {
+			"service": "Pinpoint",
+			"providerPlugin": "awscloudformation"
+		}
+	},
+	"storage": {
+		"s38658d317": {
+			"service": "S3",
+			"providerPlugin": "awscloudformation"
+		}
+	}
+}
