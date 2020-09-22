@@ -30,6 +30,19 @@ class BucketViewerState extends State<BucketViewer> {
   }
 
   logout() async {
+    try {
+      Amplify.Auth.signOut();
+
+      // destroy this page and head back to the login screen
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => Login()));
+
+    } on AuthError catch (e) {
+      Alert(
+          context: context,
+          type: AlertType.error,
+          desc: "Error Logging Out: " + e.toString()).show();
+    }
   }
 
   Future<bool> checkPermission() async {
@@ -46,12 +59,75 @@ class BucketViewerState extends State<BucketViewer> {
   }
 
   void downloadFile(StorageItem item) async {
+    try {
+      var dir = await DownloadsPathProvider.downloadsDirectory;
+      var url = await Amplify.Storage.getUrl(
+          key: item.key, options: GetUrlOptions(expires: 3600));
+
+      await checkPermission();
+
+      await FlutterDownloader.enqueue(
+        url: url.url,
+        fileName: item.key.split('/').last,
+        savedDir: dir.path,
+        showNotification: true,
+        openFileFromNotification: true,
+      );
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   void deleteFile(StorageItem item) async {
+    try {
+      await Amplify.Storage.remove(
+        key: item.key,
+      );
+    } catch (e) {
+      Alert(
+              context: context,
+              type: AlertType.error,
+              desc: "Error Deleting File: " + e.toString())
+          .show();
+    }
   }
 
   void uploadFile() async {
+    File file = await FilePicker.getFile();
+    AuthUser user = await Amplify.Auth.getCurrentUser();
+
+    try {
+      if (file.existsSync()) {
+        setState(() {
+          uploading = true;
+        });
+
+        // create <username>/<filename> as the file key
+        final key = user.username + '/' + file.path.split('/').last;
+
+        await Amplify.Storage.uploadFile(key: key, local: file);
+
+        // log an upload event, tracking the amount of bytes uploaded
+        AnalyticsEvent event = AnalyticsEvent("file_upload_event");
+
+        event.properties.addStringProperty("user", user.username);
+        event.properties.addIntProperty("file_size", file.lengthSync());
+
+        Amplify.Analytics.recordEvent(event: event);
+
+        // sends the events to pinpoint (in practice, trigger this on an interval)
+        Amplify.Analytics.flushEvents();
+
+        setState(() {
+          uploading = false;
+        });
+      }
+    } catch (e) {
+      Alert(
+          context: context,
+          type: AlertType.error,
+          desc: "Error Uploading File: " + e.toString());
+    }
   }
 
   Future<List<StorageItem>> listFiles() async {

@@ -29,9 +29,40 @@ class _LoginState extends State<Login> {
   }
 
   Future<String> _registerUser(LoginData data) async {
+    try {
+      Map<String, dynamic> userAttributes = {
+        "email": data.name,
+      };
+      SignUpResult res = await Amplify.Auth.signUp(
+          username: data.name,
+          password: data.password,
+          options: CognitoSignUpOptions(userAttributes: userAttributes));
+
+      _userName = data.name;
+
+      _isSignedUp = res.isSignUpComplete;
+
+      return null;
+    } on AuthError catch (e) {
+      print(e);
+      return "Register Error: " + e.toString();
+    }
   }
 
   Future<String> _signIn(LoginData data) async {
+    try {
+      SignInResult res = await Amplify.Auth.signIn(
+        username: data.name,
+        password: data.password,
+      );
+
+      _isSignedin = res.isSignedIn;
+    } on AuthError catch (e) {
+      print(e);
+      Alert(context: context, type: AlertType.error, title: "Login Failed")
+          .show();
+      return 'Log In Error: ' + e.toString();
+    }
   }
 
   void _enter() async {
